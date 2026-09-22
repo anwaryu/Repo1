@@ -1,0 +1,13 @@
+{
+  "name": "rad-roots",
+  "version": "1.0.0",
+  "description": "Rad Roots: a square-root garden. Kids grow squares, dig up roots, and bust the classic mix-ups with Rad the Radish.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "keywords": ["education", "math", "square-roots", "kids", "game"],
+  "license": "MIT"
+}
