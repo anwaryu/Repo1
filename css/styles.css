@@ -723,3 +723,57 @@ sup { font-size: .6em; vertical-align: super; line-height: 0; }
 :root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after {
   animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important;
 }
+
+/* ---------- Phones and the installed (home-screen) app ---------- */
+html { background: var(--bg); }
+body { overscroll-behavior-y: contain; touch-action: manipulation; }
+.app { padding-top: env(safe-area-inset-top, 0px); padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+.btn, .key, .choice, .mound, .plot, .icon-btn, .switch, .tile, .grid, .nline, .decide-card, .goal, .slider, .machine-num, .stars { user-select: none; -webkit-user-select: none; }
+.tile, .mound-num, .nline { -webkit-touch-callout: none; }
+
+/* No sticky hover states on touch screens */
+@media (hover: none) {
+  .plot:hover { transform: none; box-shadow: var(--shadow-1); }
+  .btn:hover { filter: none; }
+  .mini-card:hover { transform: none; }
+  .choice:hover { background: var(--surface-2); }
+  .icon-btn:hover { background: var(--surface); }
+  .hint-btn:hover { background: none; }
+}
+
+/* Add-to-home-screen tip */
+.install-tip { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius-m); background: var(--sun-soft); color: var(--sun-ink); }
+.install-tip .mini-card-icon { background: rgba(255, 255, 255, .55); color: var(--sun-ink); }
+.install-text { flex: 1 1 200px; min-width: 0; }
+.install-text b { display: block; font-family: var(--font-ui); font-weight: 700; font-size: 16px; }
+.install-text span { font-size: 14px; }
+.install-tip .row { flex: none; gap: 8px; }
+@media (max-width: 480px) {
+  .install-tip { flex-wrap: wrap; }
+  .install-tip .row { width: 100%; }
+  .install-tip .row .btn { flex: 1; }
+}
+
+/* Short landscape phones: keep the work area on screen */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero .rad { width: 72px; height: 90px; }
+  .speech--big { grid-template-columns: 64px 1fr; }
+  .speech--big .rad { width: 64px; height: 80px; }
+  .grid { --size: min(300px, 76vw, 48vh); }
+  .stage-pad { padding-bottom: 120px; }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .hero-title { font-size: 28px; }
+  .btn--big { font-size: 19px; }
+  .plot-name { font-size: 18px; }
+  .decide-card .eq { font-size: 34px; }
+  .eq--huge { font-size: 38px; }
+}
+
+/* Smallest phones: give the wordmark room (the star total is repeated on the garden path) */
+@media (max-width: 360px) {
+  .chip--star { display: none; }
+  .brand-name { font-size: 22px; }
+}

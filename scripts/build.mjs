@@ -20,6 +20,7 @@ const js = scripts.map((s) => `/* ---- ${s} ---- */\n${read(s)}`).join('\n\n');
 let out = html
   .replace(/\s*<link rel="stylesheet" href="css\/styles.css">/, () => `\n  <style>\n${css}\n  </style>`)
   .replace(/\s*<script src="[^"]+"><\/script>/g, '')
+  .replace(/\s*<link rel="(manifest|apple-touch-icon)"[^>]*>/g, '')
   .replace(/<\/body>/, () => `  <script>\n${js}\n  </script>\n</body>`);
 
 if (fragment) {

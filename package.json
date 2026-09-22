@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "keywords": ["education", "math", "square-roots", "kids", "game"],
   "license": "MIT"

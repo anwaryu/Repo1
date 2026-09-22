@@ -93,6 +93,8 @@ const App = (() => {
         h('div', { class: 'mini-cards' },
           h('button', { type: 'button', class: 'mini-card', onclick: () => { SFX.tap(); badges(); } }, h('span', { class: 'mini-card-icon', html: icon('ribbon') }), h('span', {}, h('b', {}, 'Badges'), h('span', {}, `${st.badges.length} of ${BADGES.length} earned`))),
           h('button', { type: 'button', class: 'mini-card', onclick: () => { SFX.tap(); parents(); } }, h('span', { class: 'mini-card-icon', style: { background: 'var(--sky-soft)', color: 'var(--sky-ink)' }, html: icon('book') }), h('span', {}, h('b', {}, 'Parents & teachers'), h('span', {}, 'How Rad Roots teaches')))));
+      const tip = installTip();
+      if (tip) foot.append(tip);
       root.append(foot);
 
       const draw = () => drawMapPath(map);
@@ -335,6 +337,43 @@ const App = (() => {
     document.body.prepend(sky);
     home();
     if (!Store.state.seen.welcome) welcome();
+    registerServiceWorker();
+  }
+
+  /* ---------- Installable app (add to home screen, offline) ---------- */
+  let deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; refreshInstallTip(); });
+  window.addEventListener('appinstalled', () => { deferredInstall = null; Store.markSeen('install'); const t = $('.install-tip'); if (t) t.remove(); toast('Rad Roots is on your home screen'); });
+  function isStandalone() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function installTip() {
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if (!touch || isStandalone() || Store.state.seen.install) return null;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const how = isIOS
+      ? 'In Safari, tap Share (the square with an arrow), then "Add to Home Screen".'
+      : deferredInstall ? 'Full screen, no browser bar, and it works offline.' : 'Open the browser menu and choose "Add to Home screen".';
+    const tip = h('div', { class: 'install-tip', role: 'note' },
+      h('span', { class: 'mini-card-icon', html: icon('seed') }),
+      h('span', { class: 'install-text' }, h('b', {}, 'Put Rad Roots on your home screen'), h('span', {}, how)),
+      h('span', { class: 'row' },
+        deferredInstall ? h('button', { type: 'button', class: 'btn btn--sun btn--small', onclick: async () => {
+          SFX.tap(); const p = deferredInstall; if (!p) return;
+          p.prompt(); try { await p.userChoice; } catch (e) { /* dismissed */ }
+          deferredInstall = null;
+        } }, 'Install') : null,
+        h('button', { type: 'button', class: 'btn btn--ghost btn--small', onclick: () => { SFX.tap(); Store.markSeen('install'); tip.remove(); } }, 'Not now')));
+    return tip;
+  }
+  function refreshInstallTip() {
+    const old = $('.install-tip');
+    if (!old) return;
+    const fresh = installTip();
+    if (fresh) old.replaceWith(fresh); else old.remove();
+  }
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+    const register = () => navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is a bonus, never a blocker */ });
+    if (document.readyState === 'complete') register(); else window.addEventListener('load', register);
   }
 
   return { boot, home, level, badges, parents };
