@@ -8,6 +8,17 @@
   <img src="docs/screenshots/11-grow.png" width="270" alt="Squares grow by odd numbers: 1 + 3 + 5 + 7 + 9 + 11 + 13 = 49">
 </p>
 
+## Play it now
+
+**https://anwaryu.github.io/Repo1/** works on any phone, tablet or computer. No account, no login, nothing to install.
+
+On a phone it can live on the home screen like an app: full screen, its own icon, and it keeps working without a signal.
+
+- **iPhone or iPad:** open the link in Safari, tap Share (the square with an arrow), then *Add to Home Screen*.
+- **Android:** open the link in Chrome and tap *Install* on the tip Rad shows, or use the browser menu and choose *Add to Home screen*.
+
+Every push to this branch republishes the site: `.github/workflows/pages.yml` copies the app into the `gh-pages` branch, which GitHub Pages serves. That branch is generated output, so never edit it by hand.
+
 ## Why a garden, and why a radish?
 
 Square roots are usually introduced as a symbol to memorise. Rad Roots introduces them the way they were discovered: **a square number is literally a square of tiles, and its root is the length of one side.** A 25-tile square has 5 tiles on each side, so √25 = 5. Once that picture is in a child's head, the symbol has somewhere to land.
@@ -46,6 +57,7 @@ Rewards are attached to skills, not to time spent:
 - **Components:** seed-packet cards for the plots (a coloured band, a perforated tear line), chunky pressable buttons, a jelly-tile grid, a plant view with the root drawn in the soil, a number pad, a zoomed number line, and a bottom feedback sheet.
 - **Sound:** short synthesised pops, chimes and fanfares from the Web Audio API. No audio files; one tap to mute.
 - **Motion:** staggered tile pop-ins, spring buttons, confetti on completion. All of it respects `prefers-reduced-motion` and an in-app toggle.
+- **Built for phones:** 44px+ touch targets, no sticky hover states, no accidental text selection, safe-area padding for notched screens, layouts tuned down to 320px and for short landscape phones. A web app manifest and service worker make it installable and playable offline.
 
 The full rationale is in [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -83,6 +95,9 @@ Progress (stars, XP, badges, settings) is saved in `localStorage` on the device.
 
 ```
 index.html          shell, fonts, script order
+manifest.webmanifest  home-screen app metadata and icons
+sw.js               service worker: app shell cached for offline play
+icons/              Rad as app icons (SVG sources and rendered PNGs)
 css/styles.css      tokens (light + dark), layout, every component
 js/util.js          DOM helper, shuffle, isSquare
 js/icons.js         inline SVG icon set, the radical sign, star rows
@@ -96,6 +111,9 @@ js/levels.js        the seven plots: all copy and content
 js/app.js           screens, level runner, completion, settings, boot
 scripts/serve.mjs   tiny static server (npm start)
 scripts/build.mjs   single-file bundler (npm run build)
+scripts/make-icons.mjs  renders the PNG icons from the SVGs (npm run icons)
+.github/workflows/pages.yml  deploys to GitHub Pages on push
+vercel.json         headers for hosting the same folder on Vercel
 docs/DESIGN.md      learning design and visual design rationale
 docs/screenshots/   captured from the real app
 ```

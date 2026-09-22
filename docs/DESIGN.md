@@ -110,6 +110,7 @@ The twelve perfect squares each get a fixed tile hue (`--t1` … `--t12`, a cora
 - Progress in `localStorage` (`radroots.v1`), wrapped in try/catch so a blocked store degrades to an in-memory session.
 - A lesson is an array of *steps*; twelve step types (`intro`, `card`, `build`, `gallery`, `decide`, `answer`, `choice`, `machine`, `grow`, `hunt`, `estimate`, `rush`) cover all seven plots. Adding a plot is adding data to `js/levels.js`.
 - `scripts/build.mjs` inlines everything into one HTML file for hosting anywhere.
+- A web app manifest, rendered icons and a small service worker (network first, cache fallback) make the site installable on iOS and Android and playable offline. The service worker is only registered over http(s), so the file and artifact builds are unaffected.
 
 ## 8. Ideas for a second season
 
