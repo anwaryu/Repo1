@@ -1,0 +1,347 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>ACAMS Exposure Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* Layout: governance dashboard — sticky header, summary tiles, breakdown panels, filterable findings table, mitigation strip */
+  :root{
+    --bg:#f5f7fa; --surface:#ffffff; --surface-2:#eef1f6; --fg:#131a26; --muted:#5b6778;
+    --line:#dce2ec; --accent:#1a46a3; --accent-weak:#e6ecf8;
+    --crit:#b4291f; --crit-bg:#fae8e6; --high:#a8601a; --high-bg:#f8ecdd;
+    --med:#8a6d12; --med-bg:#f5efd8; --low:#2f6d52; --low-bg:#e3f0e9;
+    --ok:#2f6d52; --info:#1a46a3;
+    --font-display:"Archivo",system-ui,sans-serif;
+    --font-body:"IBM Plex Sans",system-ui,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0c111c; --surface:#141c2c; --surface-2:#1d2840; --fg:#e8edf6; --muted:#9aa7bd;
+    --line:#2a3550; --accent:#7a9eff; --accent-weak:#1b2740;
+    --crit:#f08a80; --crit-bg:#3a1d1a; --high:#eab873; --high-bg:#352412;
+    --med:#e0cf7a; --med-bg:#2f2a10; --low:#7fd3ab; --low-bg:#132a20;
+    --ok:#7fd3ab; --info:#7a9eff; color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0c111c; --surface:#141c2c; --surface-2:#1d2840; --fg:#e8edf6; --muted:#9aa7bd;
+    --line:#2a3550; --accent:#7a9eff; --accent-weak:#1b2740;
+    --crit:#f08a80; --crit-bg:#3a1d1a; --high:#eab873; --high-bg:#352412;
+    --med:#e0cf7a; --med-bg:#2f2a10; --low:#7fd3ab; --low-bg:#132a20;
+    --ok:#7fd3ab; --info:#7a9eff; color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--surface)}
+  .wrap{width:100%;max-width:1180px;margin-inline:auto;
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px))}
+  h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+  /* Header */
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:var(--surface);border-bottom:1px solid var(--line)}
+  .hbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding-block:14px}
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .mark{width:34px;height:34px;flex:none;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff}
+  .mark svg{width:19px;height:19px}
+  .brand-tx{min-width:0}
+  .brand-tx h1{font-size:1.06rem;font-weight:700;line-height:1.15}
+  .brand-tx p{margin:1px 0 0;font-size:.74rem;color:var(--muted);letter-spacing:.02em}
+  .hspace{flex:1 1 auto}
+  .flag{display:inline-flex;align-items:center;gap:7px;font-size:.72rem;font-weight:600;color:var(--high);
+    background:var(--high-bg);border:1px solid color-mix(in srgb,var(--high) 35%,transparent);
+    padding:5px 10px;border-radius:999px;letter-spacing:.01em}
+  .flag .dot{width:7px;height:7px;border-radius:50%;background:var(--high)}
+  .theme-btn{font-family:var(--font-body);font-size:.75rem;font-weight:600;color:var(--muted);cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .theme-btn:hover{color:var(--fg)}
+
+  main{padding-block:22px 40px;display:flex;flex-direction:column;gap:22px}
+  .intro{max-width:72ch}
+  .intro h2{font-size:1.28rem;font-weight:700;margin-bottom:6px}
+  .intro p{margin:0;color:var(--muted);font-size:.93rem}
+
+  .section-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .section-h h3{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .section-h .meta{font-size:.76rem;color:var(--muted)}
+
+  /* Stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 16px 15px;position:relative;overflow:hidden}
+  .tile::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--accent)}
+  .tile.crit::before{background:var(--crit)} .tile.warn::before{background:var(--high)} .tile.ok::before{background:var(--ok)}
+  .tile .k{font-size:.74rem;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .tile .v{font-family:var(--font-mono);font-size:2.05rem;font-weight:600;line-height:1.05;margin-top:9px}
+  .tile .s{font-size:.73rem;color:var(--muted);margin-top:5px}
+
+  /* Breakdown panels */
+  .panels{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:17px 18px}
+  .panel h3{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px}
+  .bars{display:flex;flex-direction:column;gap:11px}
+  .bar-row{display:grid;grid-template-columns:118px 1fr 26px;align-items:center;gap:10px;font-size:.84rem}
+  .bar-row .lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .track{height:9px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+  .fill{height:100%;border-radius:5px;background:var(--accent)}
+  .bar-row .n{font-family:var(--font-mono);font-size:.82rem;text-align:right;color:var(--muted)}
+  .sev-seg{display:flex;height:13px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+  .sev-seg i{display:block;height:100%}
+  .sev-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:14px}
+  .sev-legend span{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted)}
+  .sev-legend span b{font-family:var(--font-mono);color:var(--fg);font-weight:600}
+  .sw{width:10px;height:10px;border-radius:3px;flex:none}
+
+  /* Filters */
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .chip{font-family:var(--font-body);font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;
+    background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;white-space:nowrap}
+  .chip:hover{border-color:var(--accent);color:var(--fg)}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chip .c{font-family:var(--font-mono);opacity:.8;margin-left:5px}
+  .tb-label{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:3px}
+
+  /* Table */
+  .table-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:860px;font-size:.84rem}
+  thead th{position:sticky;top:0;background:var(--surface-2);text-align:left;font-weight:600;color:var(--muted);
+    font-size:.73rem;text-transform:uppercase;letter-spacing:.05em;padding:11px 14px;white-space:nowrap;border-bottom:1px solid var(--line)}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--surface-2)}
+  td.id{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);white-space:nowrap}
+  td.mat{font-weight:600;min-width:170px}
+  td.mat small{display:block;font-weight:400;color:var(--muted);font-size:.76rem;margin-top:2px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:.73rem;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .pill .d{width:7px;height:7px;border-radius:50%;flex:none}
+  .sev-critical{color:var(--crit);background:var(--crit-bg)} .sev-critical .d{background:var(--crit)}
+  .sev-high{color:var(--high);background:var(--high-bg)} .sev-high .d{background:var(--high)}
+  .sev-medium{color:var(--med);background:var(--med-bg)} .sev-medium .d{background:var(--med)}
+  .sev-low{color:var(--low);background:var(--low-bg)} .sev-low .d{background:var(--low)}
+  .st{font-size:.78rem;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .st .d{width:7px;height:7px;border-radius:50%;flex:none}
+  .st-new .d{background:var(--high)} .st-triaged .d{background:var(--muted)}
+  .st-takedown-filed .d{background:var(--info)} .st-removed .d{background:var(--ok)} .st-recurring .d{background:var(--crit)}
+  .vcell{white-space:nowrap} .muted{color:var(--muted)}
+  .empty{padding:30px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+
+  /* Mitigation strip */
+  .mit{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .mcard{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:14px}
+  .mcard .ph{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+  .mcard h4{font-family:var(--font-display);font-size:.95rem;margin:4px 0 9px;font-weight:600}
+  .mstat{font-size:.72rem;font-weight:600;padding:3px 8px;border-radius:999px;display:inline-block}
+  .mstat.inprog{color:var(--info);background:var(--accent-weak)}
+  .mstat.pilot{color:var(--high);background:var(--high-bg)}
+  .mstat.planned{color:var(--muted);background:var(--surface-2)}
+
+  footer{border-top:1px solid var(--line);padding-block:18px 8px;color:var(--muted);font-size:.78rem;display:flex;flex-direction:column;gap:6px}
+  footer b{color:var(--fg);font-weight:600}
+
+  @media (max-width:860px){
+    .tiles{grid-template-columns:repeat(2,1fr)}
+    .panels{grid-template-columns:1fr}
+    .mit{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:460px){
+    .tiles{grid-template-columns:1fr 1fr}
+    .mit{grid-template-columns:1fr}
+    .bar-row{grid-template-columns:96px 1fr 24px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .fill,.chip,.theme-btn{transition:all .15s ease}
+</style>
+
+<header>
+  <div class="wrap hbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </span>
+      <div class="brand-tx">
+        <h1>ACAMS Exposure Dashboard</h1>
+        <p>Proprietary content leakage &middot; Board risk view</p>
+      </div>
+    </div>
+    <span class="hspace"></span>
+    <span class="flag"><span class="dot"></span>Illustrative sample data</span>
+    <button class="theme-btn" id="themeBtn" type="button">Theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h2>Where ACAMS content is exposed</h2>
+    <p>A defensive snapshot of proprietary content found outside authorized channels, organized by leak channel and severity, with a recommended response for each item. Figures below are an illustrative sample that shows what a sanctioned, public-source assessment produces. They are not measured findings and should be replaced by a 90-day baseline before Board sign-off.</p>
+  </section>
+
+  <section>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section class="panels">
+    <div class="panel">
+      <h3>Exposure by leak channel</h3>
+      <div class="bars" id="vectorBars"></div>
+    </div>
+    <div class="panel">
+      <h3>Severity mix</h3>
+      <div class="sev-seg" id="sevSeg"></div>
+      <div class="sev-legend" id="sevLegend"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-h">
+      <h3>Findings catalog</h3>
+      <span class="meta" id="count"></span>
+    </div>
+    <div class="toolbar" id="sevFilter" style="margin-bottom:10px">
+      <span class="tb-label">Severity</span>
+    </div>
+    <div class="toolbar" id="vecFilter" style="margin-bottom:14px">
+      <span class="tb-label">Channel</span>
+    </div>
+    <div class="table-card">
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Material</th><th>Leak channel</th><th>Platform type</th>
+            <th>Access</th><th>Severity</th><th>First seen</th><th>Status</th><th>Recommended action</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-h"><h3>Mitigation program status</h3></div>
+    <div class="mit" id="mit"></div>
+  </section>
+
+  <footer>
+    <span><b>Scope &amp; guardrails.</b> Public sources only. No circumvention of ACAMS or third-party access controls. The catalog records exposure metadata and response actions; it does not store or redistribute leaked content.</span>
+    <span>Internal / Confidential &middot; Draft for Board review &middot; Replace illustrative data with measured baseline findings.</span>
+  </footer>
+</main>
+
+<script>
+  const VEC={'credential-share':'Credential sharing','user-upload':'User upload','conference-reshare':'Conference reshare','scraping':'Gated scraping','ai-ingestion':'AI ingestion','resale':'Resale / locker'};
+  const SEV=[['critical','Critical','var(--crit)'],['high','High','var(--high)'],['medium','Medium','var(--med)'],['low','Low','var(--low)']];
+  const STLBL={'new':'New','triaged':'Triaged','takedown-filed':'Takedown filed','removed':'Removed','recurring':'Recurring'};
+
+  const DATA=[
+    {id:'EX-001',material:'CAMS Exam — question bank',type:'Exam / question content',vector:'resale',platform:'Online marketplace',access:'For sale',severity:'critical',seen:'2026-09-02',status:'takedown-filed',action:'Escalate — Legal'},
+    {id:'EX-002',material:'CAMS practice questions',type:'Exam / question content',vector:'user-upload',platform:'Flashcard platform',access:'Openly downloadable',severity:'critical',seen:'2026-09-14',status:'recurring',action:'Takedown + harden'},
+    {id:'EX-011',material:'CGSS exam questions',type:'Exam / question content',vector:'resale',platform:'Messaging channel index',access:'For sale',severity:'critical',seen:'2026-10-10',status:'new',action:'Escalate — Legal'},
+    {id:'SG-003',material:'CAMS Study Guide (6th Ed.)',type:'Study guide',vector:'user-upload',platform:'Document-sharing site',access:'Openly downloadable',severity:'high',seen:'2026-08-21',status:'takedown-filed',action:'Takedown'},
+    {id:'SG-004',material:'CAMS Study Guide (6th Ed.)',type:'Study guide',vector:'resale',platform:'Online marketplace',access:'For sale',severity:'high',seen:'2026-09-30',status:'new',action:'Escalate — Legal'},
+    {id:'CW-005',material:'CAMS-Audit courseware',type:'Courseware / slides',vector:'credential-share',platform:'File locker',access:'Openly downloadable',severity:'high',seen:'2026-07-19',status:'triaged',action:'Takedown + harden'},
+    {id:'SG-012',material:'CAMS flashcards (full set)',type:'Flashcards / bank',vector:'user-upload',platform:'Flashcard platform',access:'Openly downloadable',severity:'high',seen:'2026-09-19',status:'recurring',action:'Takedown + harden'},
+    {id:'AI-014',material:'CAMS study guide passages',type:'Study guide',vector:'ai-ingestion',platform:'AI answer engine',access:'Reproduced on prompt',severity:'high',seen:'2026-10-15',status:'new',action:'AI opt-out + Legal'},
+    {id:'FL-006',material:'CGSS study materials',type:'Study guide',vector:'user-upload',platform:'Course-notes site',access:'Preview + paywalled',severity:'medium',seen:'2026-09-08',status:'new',action:'Monitor'},
+    {id:'AI-007',material:'AML Foundations module text',type:'Courseware / slides',vector:'ai-ingestion',platform:'AI answer engine',access:'Reproduced on prompt',severity:'medium',seen:'2026-10-01',status:'triaged',action:'AI opt-out request'},
+    {id:'CF-008',material:'ACAMS conference session deck',type:'Courseware / slides',vector:'conference-reshare',platform:'Document-sharing site',access:'Openly downloadable',severity:'medium',seen:'2026-06-12',status:'removed',action:'Monitor'},
+    {id:'CW-013',material:'CAMS eLearning module',type:'Courseware / slides',vector:'credential-share',platform:'File locker',access:'Openly downloadable',severity:'medium',seen:'2026-07-02',status:'takedown-filed',action:'Takedown'},
+    {id:'VR-009',material:'Sanctions webinar recording',type:'Recording',vector:'conference-reshare',platform:'Video platform',access:'Openly viewable',severity:'low',seen:'2026-05-23',status:'removed',action:'Monitor'},
+    {id:'WP-010',material:'AML risk-assessment white paper',type:'Standard / white paper',vector:'scraping',platform:'Document-sharing site',access:'Openly downloadable',severity:'low',seen:'2026-08-30',status:'new',action:'Monitor'}
+  ];
+
+  const MIT=[
+    {ph:'01',t:'Detect',s:'In progress',c:'inprog',d:'Continuous public-source monitoring across six channels'},
+    {ph:'02',t:'Respond',s:'Piloting',c:'pilot',d:'DMCA / platform takedown workflow with tracking'},
+    {ph:'03',t:'Harden',s:'Planned',c:'planned',d:'Watermarking, fingerprinting, access-control review'},
+    {ph:'04',t:'AI posture',s:'Planned',c:'planned',d:'Crawler directives, licensing stance, opt-out requests'},
+    {ph:'05',t:'Measure',s:'This deck',c:'inprog',d:'Quarterly exposure + takedown reporting to Board'}
+  ];
+
+  const sevState=new Set(), vecState=new Set();
+  const $=s=>document.querySelector(s);
+
+  function fmtDate(d){const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const p=d.split('-');return m[+p[1]-1]+' '+(+p[2])+', '+p[0];}
+
+  function renderTiles(){
+    const crit=DATA.filter(d=>d.severity==='critical').length;
+    const td=DATA.filter(d=>d.status==='takedown-filed').length;
+    const rec=DATA.filter(d=>d.status==='recurring').length;
+    const t=[
+      {k:'Exposure items',v:DATA.length,s:'Illustrative sample',cls:''},
+      {k:'Critical severity',v:crit,s:'Exam / question content',cls:'crit'},
+      {k:'Takedowns in progress',v:td,s:'Filed, awaiting removal',cls:'warn'},
+      {k:'Recurring items',v:rec,s:'Reposted after removal',cls:'crit'}
+    ];
+    $('#tiles').innerHTML=t.map(x=>`<div class="tile ${x.cls}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join('');
+  }
+
+  function renderVectorBars(){
+    const counts={};Object.keys(VEC).forEach(k=>counts[k]=0);
+    DATA.forEach(d=>counts[d.vector]++);
+    const max=Math.max(...Object.values(counts),1);
+    $('#vectorBars').innerHTML=Object.keys(VEC).sort((a,b)=>counts[b]-counts[a]).map(k=>
+      `<div class="bar-row"><span class="lbl" title="${VEC[k]}">${VEC[k]}</span><div class="track"><div class="fill" style="width:${counts[k]/max*100}%"></div></div><span class="n">${counts[k]}</span></div>`
+    ).join('');
+  }
+
+  function renderSeverity(){
+    const counts={};SEV.forEach(s=>counts[s[0]]=DATA.filter(d=>d.severity===s[0]).length);
+    const total=DATA.length||1;
+    $('#sevSeg').innerHTML=SEV.map(s=>`<i style="width:${counts[s[0]]/total*100}%;background:${s[2]}"></i>`).join('');
+    $('#sevLegend').innerHTML=SEV.map(s=>`<span><span class="sw" style="background:${s[2]}"></span>${s[1]} <b>${counts[s[0]]}</b></span>`).join('');
+  }
+
+  function renderFilters(){
+    const sc={};SEV.forEach(s=>sc[s[0]]=DATA.filter(d=>d.severity===s[0]).length);
+    $('#sevFilter').insertAdjacentHTML('beforeend',SEV.map(s=>
+      `<button class="chip" data-sev="${s[0]}" aria-pressed="false">${s[1]}<span class="c">${sc[s[0]]}</span></button>`).join(''));
+    const vc={};Object.keys(VEC).forEach(k=>vc[k]=DATA.filter(d=>d.vector===k).length);
+    $('#vecFilter').insertAdjacentHTML('beforeend',Object.keys(VEC).map(k=>
+      `<button class="chip" data-vec="${k}" aria-pressed="false">${VEC[k]}<span class="c">${vc[k]}</span></button>`).join(''));
+    document.querySelectorAll('[data-sev]').forEach(b=>b.onclick=()=>toggle(sevState,b,'sev'));
+    document.querySelectorAll('[data-vec]').forEach(b=>b.onclick=()=>toggle(vecState,b,'vec'));
+  }
+  function toggle(set,btn,key){
+    const val=btn.dataset[key];
+    if(set.has(val)){set.delete(val);btn.setAttribute('aria-pressed','false');}
+    else{set.add(val);btn.setAttribute('aria-pressed','true');}
+    renderRows();
+  }
+
+  function renderRows(){
+    const rows=DATA.filter(d=>(sevState.size===0||sevState.has(d.severity))&&(vecState.size===0||vecState.has(d.vector)));
+    const tb=$('#rows');
+    if(!rows.length){tb.innerHTML=`<tr><td colspan="9" class="empty">No items match the current filters.</td></tr>`;}
+    else{
+      tb.innerHTML=rows.map(d=>`<tr>
+        <td class="id">${d.id}</td>
+        <td class="mat">${d.material}<small>${d.type}</small></td>
+        <td class="vcell">${VEC[d.vector]}</td>
+        <td class="muted">${d.platform}</td>
+        <td class="muted">${d.access}</td>
+        <td><span class="pill sev-${d.severity}"><span class="d"></span>${d.severity[0].toUpperCase()+d.severity.slice(1)}</span></td>
+        <td class="muted mono" style="white-space:nowrap">${fmtDate(d.seen)}</td>
+        <td><span class="st st-${d.status}"><span class="d"></span>${STLBL[d.status]}</span></td>
+        <td>${d.action}</td>
+      </tr>`).join('');
+    }
+    $('#count').textContent=rows.length+' of '+DATA.length+' items';
+  }
+
+  function renderMit(){
+    $('#mit').innerHTML=MIT.map(m=>`<div class="mcard"><div class="ph">${m.ph}</div><h4>${m.t}</h4><span class="mstat ${m.c}">${m.s}</span><p style="margin:9px 0 0;font-size:.8rem;color:var(--muted)">${m.d}</p></div>`).join('');
+  }
+
+  // Theme toggle (per-viewer convenience)
+  (function(){
+    const root=document.documentElement, btn=$('#themeBtn');
+    let saved=null; try{saved=localStorage.getItem('acams-theme');}catch(e){}
+    if(saved)root.setAttribute('data-theme',saved);
+    btn.onclick=()=>{
+      const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+      const next=cur==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem('acams-theme',next);}catch(e){}
+    };
+  })();
+
+  renderTiles();renderVectorBars();renderSeverity();renderFilters();renderRows();renderMit();
+</script>
